@@ -1,0 +1,52 @@
+{
+  "topics": [
+    {
+      "category": "mystery",
+      "prompts": [
+        "A detective discovers a secret door in an abandoned mansion",
+        "Strange lights appear over a small fishing village every night",
+        "An old photograph reveals a person who shouldn't exist"
+      ]
+    },
+    {
+      "category": "horror",
+      "prompts": [
+        "A lighthouse keeper notices something watching from the water",
+        "Whispers echo through an empty subway station at midnight",
+        "A mirror in an antique shop shows reflections of the past"
+      ]
+    },
+    {
+      "category": "sci-fi",
+      "prompts": [
+        "The last astronaut on a dying space station receives a transmission",
+        "A scientist discovers their AI has been dreaming",
+        "Time stops for everyone except one person"
+      ]
+    },
+    {
+      "category": "fantasy",
+      "prompts": [
+        "A child finds a door to another world in their grandmother's garden",
+        "Dragons return to a world that forgot they existed",
+        "A wizard's apprentice accidentally unleashes ancient magic"
+      ]
+    },
+    {
+      "category": "inspirational",
+      "prompts": [
+        "An elderly artist paints their final masterpiece",
+        "A refugee rebuilds their life in a new land",
+        "Two strangers form an unlikely friendship on a long train journey"
+      ]
+    },
+    {
+      "category": "thriller",
+      "prompts": [
+        "A witness must escape before dawn",
+        "Someone realizes they've been living someone else's life",
+        "A coded message leads to a dangerous truth"
+      ]
+    }
+  ]
+}

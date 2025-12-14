@@ -1,0 +1,4 @@
+# App 3: Video Assembler Dependencies
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+piper-tts>=1.2.0

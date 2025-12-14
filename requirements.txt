@@ -39,5 +39,5 @@ soundfile>=0.12.0
 # ===========================================
 # Flash Attention (faster inference) - Prebuilt for RTX 6000 Ada
 # ===========================================
-# Using prebuilt wheel for PyTorch 2.5 + CUDA 12.4 (skip long compilation)
-flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v2.6.3/flash_attn-2.6.3+cu124torch2.5-cp312-cp312-linux_x86_64.whl ; python_version == "3.12"
+# Using prebuilt wheel for PyTorch 2.5 + CUDA 12.4 + Python 3.12 (skip long compilation)
+flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.5.4/flash_attn-2.6.3%2Bcu124torch2.5-cp312-cp312-linux_x86_64.whl ; python_version == "3.12"

@@ -58,7 +58,7 @@ SCENES_COUNT = 6
 SCENE_DURATION = TARGET_DURATION // SCENES_COUNT  # ~10 seconds each
 
 # Wan 2.2 video settings
-WAN_VIDEO_SIZE = "720*1280"  # Vertical 720p
+WAN_VIDEO_SIZE = "480*848"  # Vertical 480p (faster generation)
 WAN_VIDEO_FRAMES = 121  # ~5 seconds at 24fps
 
 # ===========================================

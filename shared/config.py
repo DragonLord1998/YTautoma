@@ -58,7 +58,7 @@ SCENES_COUNT = 6
 SCENE_DURATION = TARGET_DURATION // SCENES_COUNT  # ~10 seconds each
 
 # Wan 2.2 video settings
-WAN_VIDEO_SIZE = "480*832"  # Vertical 480p (valid Wan 2.2 size)
+WAN_VIDEO_SIZE = "704*1280"  # Vertical (ti2v-5B supports 704*1280 or 1280*704)
 WAN_VIDEO_FRAMES = 121  # ~5 seconds at 24fps
 
 # ===========================================

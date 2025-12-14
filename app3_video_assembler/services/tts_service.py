@@ -2,15 +2,15 @@
 TTS Service
 Text-to-speech with multiple backends:
 - Edge-TTS (simple, always works, no GPU)
-- VibeVoice (advanced, requires setup)
+- VibeVoice (advanced, high quality, requires setup)
 """
 
 import subprocess
 import asyncio
 import os
+import sys
 from pathlib import Path
 from typing import Optional
-import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from shared.config import VIBEVOICE_MODEL, VIBEVOICE_SPEAKER, VIBEVOICE_REPO_PATH
@@ -19,7 +19,6 @@ from shared.config import VIBEVOICE_MODEL, VIBEVOICE_SPEAKER, VIBEVOICE_REPO_PAT
 class EdgeTTSService:
     """Simple TTS using Microsoft Edge TTS (no GPU, always works)"""
     
-    # Available voices
     VOICES = {
         "en-US": ["en-US-GuyNeural", "en-US-JennyNeural", "en-US-AriaNeural"],
         "en-GB": ["en-GB-RyanNeural", "en-GB-SoniaNeural"],
@@ -30,7 +29,6 @@ class EdgeTTSService:
         self.available = self._check_available()
     
     def _check_available(self) -> bool:
-        """Check if edge-tts is installed"""
         try:
             import edge_tts
             return True
@@ -39,9 +37,8 @@ class EdgeTTSService:
             return False
     
     def synthesize(self, text: str, output_path: Path, voice: Optional[str] = None) -> Path:
-        """Generate speech from text"""
         if not self.available:
-            raise RuntimeError("edge-tts not installed. Run: pip install edge-tts")
+            raise RuntimeError("edge-tts not installed")
         
         output_path = Path(output_path).with_suffix(".mp3")
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -52,7 +49,6 @@ class EdgeTTSService:
         print(f"   Voice: {voice}")
         print(f"   Text: {text[:50]}...")
         
-        # Run async function
         async def generate():
             import edge_tts
             communicate = edge_tts.Communicate(text, voice)
@@ -64,7 +60,6 @@ class EdgeTTSService:
         return output_path
     
     def get_audio_duration(self, audio_path: Path) -> float:
-        """Get duration using ffprobe"""
         result = subprocess.run(
             ["ffprobe", "-v", "error", "-show_entries", "format=duration",
              "-of", "default=noprint_wrappers=1:nokey=1", str(audio_path)],
@@ -74,7 +69,7 @@ class EdgeTTSService:
 
 
 class VibeVoiceTTSService:
-    """Advanced TTS using Microsoft VibeVoice (requires setup)"""
+    """High-quality TTS using Microsoft VibeVoice"""
     
     SPEAKERS = ["Carter", "Evelyn", "Andrew", "Aria"]
     
@@ -87,23 +82,50 @@ class VibeVoiceTTSService:
         self.repo_path = Path(repo_path)
         self.model_id = model_id
         self.speaker = speaker
-        self._check_installation()
+        self.available = self._check_installation()
     
-    def _check_installation(self):
-        """Check if VibeVoice is installed"""
-        self.available = False
-        
+    def _check_installation(self) -> bool:
+        """Check if VibeVoice is properly installed"""
         if not self.repo_path.exists():
-            print(f"⚠️ VibeVoice not found at {self.repo_path}")
-            return
+            print(f"⚠️ VibeVoice repo not found at {self.repo_path}")
+            print("   Clone with: git clone https://github.com/microsoft/VibeVoice.git models/VibeVoice")
+            print("   Then: cd models/VibeVoice && pip install -e .")
+            return False
         
-        # Check if vibevoice module is importable
+        # Check if the inference script exists
+        inference_script = self.repo_path / "demo" / "realtime_model_inference_from_file.py"
+        if not inference_script.exists():
+            print(f"⚠️ VibeVoice inference script not found")
+            return False
+        
+        # Check if vibevoice module is installed
         try:
+            # Add repo to path temporarily to check
+            sys.path.insert(0, str(self.repo_path))
             import vibevoice
-            self.available = True
+            sys.path.pop(0)
             print(f"✅ VibeVoice ready")
+            return True
         except ImportError:
-            print("⚠️ VibeVoice module not installed. Run: cd models/VibeVoice && pip install -e .")
+            # Try installing it
+            print("⚠️ VibeVoice module not installed. Attempting to install...")
+            try:
+                result = subprocess.run(
+                    [sys.executable, "-m", "pip", "install", "-e", "."],
+                    cwd=str(self.repo_path),
+                    capture_output=True,
+                    text=True,
+                    timeout=120
+                )
+                if result.returncode == 0:
+                    print("✅ VibeVoice installed successfully")
+                    return True
+                else:
+                    print(f"⚠️ VibeVoice install failed: {result.stderr[:200]}")
+                    return False
+            except Exception as e:
+                print(f"⚠️ Could not install VibeVoice: {e}")
+                return False
     
     def synthesize(self, text: str, output_path: Path, speaker: Optional[str] = None) -> Path:
         """Generate speech using VibeVoice"""
@@ -118,6 +140,11 @@ class VibeVoiceTTSService:
         temp_txt = output_path.parent / "temp_input.txt"
         temp_txt.write_text(text)
         
+        print(f"🔊 Generating speech with VibeVoice...")
+        print(f"   Speaker: {speaker}")
+        print(f"   Text: {text[:50]}...")
+        
+        # Build command
         cmd = [
             sys.executable,
             str(self.repo_path / "demo" / "realtime_model_inference_from_file.py"),
@@ -127,19 +154,35 @@ class VibeVoiceTTSService:
             "--output_path", str(output_path)
         ]
         
-        print(f"🔊 Generating speech with VibeVoice...")
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(self.repo_path) + ":" + env.get("PYTHONPATH", "")
         
         try:
-            result = subprocess.run(cmd, cwd=str(self.repo_path), 
-                                   capture_output=True, text=True, timeout=120)
+            result = subprocess.run(
+                cmd,
+                cwd=str(self.repo_path),
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=180
+            )
+            
             if result.returncode != 0:
+                print(f"❌ VibeVoice error:\n{result.stderr[-500:]}")
                 raise RuntimeError(f"VibeVoice failed: {result.stderr[-200:]}")
+            
+            if not output_path.exists():
+                raise RuntimeError("VibeVoice did not produce output file")
+            
+            print(f"✅ Audio saved: {output_path}")
             return output_path
+            
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("VibeVoice timed out")
         finally:
             temp_txt.unlink(missing_ok=True)
     
     def get_audio_duration(self, audio_path: Path) -> float:
-        """Get duration of audio file"""
         import wave
         try:
             with wave.open(str(audio_path), 'rb') as wf:
@@ -157,20 +200,15 @@ class TTSFactory:
     """Factory for creating TTS service"""
     
     @staticmethod
-    def create(preferred: str = "edge"):
+    def create(preferred: str = "vibevoice"):
         """
         Create TTS service.
         
         Args:
-            preferred: 'edge' (simple), 'vibevoice' (advanced)
+            preferred: 'vibevoice' (high quality) or 'edge' (simple)
         """
         # Check env variable
         preferred = os.getenv("TTS_ENGINE", preferred).lower()
-        
-        if preferred == "edge":
-            service = EdgeTTSService()
-            if service.available:
-                return service
         
         if preferred == "vibevoice":
             service = VibeVoiceTTSService()
@@ -178,10 +216,19 @@ class TTSFactory:
                 return service
             print("Falling back to Edge-TTS...")
         
-        # Default fallback
-        service = EdgeTTSService()
-        if service.available:
-            return service
+        if preferred == "edge":
+            service = EdgeTTSService()
+            if service.available:
+                return service
+        
+        # Try VibeVoice first, then Edge
+        for ServiceClass in [VibeVoiceTTSService, EdgeTTSService]:
+            try:
+                service = ServiceClass()
+                if service.available:
+                    return service
+            except:
+                continue
         
         raise RuntimeError(
             "No TTS available. Install edge-tts: pip install edge-tts"

@@ -67,7 +67,7 @@ class Wan22VideoService:
         size: str = WAN_VIDEO_SIZE,
         offload_model: bool = WAN_OFFLOAD_MODEL,
         t5_cpu: bool = WAN_T5_CPU,
-        sample_steps: int = 20  # Lower = faster, default 50 is slow
+        sample_steps: int = 10  # Lower = faster, 10 for max speed
     ) -> Path:
         """
         Generate video from image using Wan 2.2 I2V.
@@ -198,7 +198,7 @@ class Wan22TI2VService(Wan22VideoService):
         prompt: str,
         output_path: Optional[Path] = None,
         size: str = "704*1280",  # TI2V uses different resolution
-        sample_steps: int = 20,  # Lower = faster
+        sample_steps: int = 10,  # Lower = faster
         **kwargs
     ) -> Path:
         """Generate using TI2V-5B task"""

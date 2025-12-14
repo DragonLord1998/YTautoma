@@ -50,7 +50,7 @@ VIBEVOICE_REPO_PATH = os.getenv("VIBEVOICE_REPO_PATH", str(MODELS_DIR / "VibeVoi
 # ===========================================
 # Video Settings
 # ===========================================
-VIDEO_WIDTH = 1080
+VIDEO_WIDTH = 1088   # Must be divisible by 16 for Z-Image
 VIDEO_HEIGHT = 1920  # 9:16 vertical for Shorts
 VIDEO_FPS = 24
 TARGET_DURATION = 60  # seconds

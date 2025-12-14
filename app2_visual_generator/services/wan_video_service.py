@@ -66,7 +66,8 @@ class Wan22VideoService:
         output_path: Optional[Path] = None,
         size: str = WAN_VIDEO_SIZE,
         offload_model: bool = WAN_OFFLOAD_MODEL,
-        t5_cpu: bool = WAN_T5_CPU
+        t5_cpu: bool = WAN_T5_CPU,
+        sample_steps: int = 20  # Lower = faster, default 50 is slow
     ) -> Path:
         """
         Generate video from image using Wan 2.2 I2V.
@@ -78,6 +79,7 @@ class Wan22VideoService:
             size: Video size (e.g., '720*1280' for vertical)
             offload_model: Offload model to save VRAM
             t5_cpu: Run T5 encoder on CPU
+            sample_steps: Number of inference steps (lower = faster, 20-30 recommended)
             
         Returns:
             Path to generated video
@@ -113,6 +115,9 @@ class Wan22VideoService:
         # Add dtype conversion for memory savings
         cmd.append("--convert_model_dtype")
         
+        # Add sample steps for speed control
+        cmd.extend(["--sample_steps", str(sample_steps)])
+        
         # Use --save_file for output path (not --save_dir)
         if output_path:
             output_path = Path(output_path)
@@ -130,7 +135,7 @@ class Wan22VideoService:
                 cwd=str(self.repo_path),
                 capture_output=True,
                 text=True,
-                timeout=600  # 10 minute timeout
+                timeout=1800  # 30 minute timeout
             )
             
             if result.returncode != 0:
@@ -156,7 +161,7 @@ class Wan22VideoService:
             return latest_video
             
         except subprocess.TimeoutExpired:
-            raise RuntimeError("Video generation timed out (10 min limit)")
+            raise RuntimeError("Video generation timed out (30 min limit)")
     
     def generate_to_file(
         self,
@@ -193,6 +198,7 @@ class Wan22TI2VService(Wan22VideoService):
         prompt: str,
         output_path: Optional[Path] = None,
         size: str = "704*1280",  # TI2V uses different resolution
+        sample_steps: int = 20,  # Lower = faster
         **kwargs
     ) -> Path:
         """Generate using TI2V-5B task"""
@@ -213,6 +219,7 @@ class Wan22TI2VService(Wan22VideoService):
             "--offload_model", "True",
             "--convert_model_dtype",
             "--t5_cpu",
+            "--sample_steps", str(sample_steps),
         ]
         
         if output_path:
@@ -227,7 +234,7 @@ class Wan22TI2VService(Wan22VideoService):
             cwd=str(self.repo_path),
             capture_output=True,
             text=True,
-            timeout=600
+            timeout=1800  # 30 minute timeout
         )
         
         if result.returncode != 0:

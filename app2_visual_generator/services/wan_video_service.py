@@ -63,7 +63,7 @@ class Wan22VideoService:
         self,
         image_path: Path,
         prompt: str,
-        output_dir: Optional[Path] = None,
+        output_path: Optional[Path] = None,
         size: str = WAN_VIDEO_SIZE,
         offload_model: bool = WAN_OFFLOAD_MODEL,
         t5_cpu: bool = WAN_T5_CPU
@@ -74,7 +74,7 @@ class Wan22VideoService:
         Args:
             image_path: Path to input image
             prompt: Motion/scene description
-            output_dir: Output directory (default: repo's output)
+            output_path: Full output file path (optional)
             size: Video size (e.g., '720*1280' for vertical)
             offload_model: Offload model to save VRAM
             t5_cpu: Run T5 encoder on CPU
@@ -113,10 +113,11 @@ class Wan22VideoService:
         # Add dtype conversion for memory savings
         cmd.append("--convert_model_dtype")
         
-        if output_dir:
-            output_dir = Path(output_dir)
-            output_dir.mkdir(parents=True, exist_ok=True)
-            cmd.extend(["--save_dir", str(output_dir)])
+        # Use --save_file for output path (not --save_dir)
+        if output_path:
+            output_path = Path(output_path)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            cmd.extend(["--save_file", str(output_path)])
         
         print(f"🎬 Generating video with Wan 2.2...")
         print(f"   Image: {image_path.name}")
@@ -136,8 +137,13 @@ class Wan22VideoService:
                 print(f"❌ Wan 2.2 error:\n{result.stderr[-1000:]}")
                 raise RuntimeError(f"Video generation failed: {result.stderr[-500:]}")
             
-            # Find generated video
-            save_dir = output_dir or (self.repo_path / "output")
+            # If output_path was specified, return it
+            if output_path and output_path.exists():
+                print(f"✅ Video generated: {output_path}")
+                return output_path
+            
+            # Otherwise find generated video in default output
+            save_dir = self.repo_path / "output"
             video_files = list(save_dir.glob("*.mp4"))
             
             if not video_files:
@@ -159,32 +165,15 @@ class Wan22VideoService:
         prompt: str,
         **kwargs
     ) -> Path:
-        """Generate video and move to specific output path"""
+        """Generate video directly to specific output path"""
         
-        # Generate to temp directory
-        temp_dir = output_path.parent / "temp_wan"
-        temp_dir.mkdir(parents=True, exist_ok=True)
-        
-        try:
-            generated_video = self.generate_video(
-                image_path=image_path,
-                prompt=prompt,
-                output_dir=temp_dir,
-                **kwargs
-            )
-            
-            # Move to final location
-            output_path = Path(output_path)
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(generated_video), str(output_path))
-            
-            print(f"💾 Saved to: {output_path}")
-            return output_path
-            
-        finally:
-            # Cleanup temp directory
-            if temp_dir.exists():
-                shutil.rmtree(temp_dir, ignore_errors=True)
+        output_path = Path(output_path)
+        return self.generate_video(
+            image_path=image_path,
+            prompt=prompt,
+            output_path=output_path,
+            **kwargs
+        )
 
 
 class Wan22TI2VService(Wan22VideoService):
@@ -202,7 +191,7 @@ class Wan22TI2VService(Wan22VideoService):
         self,
         image_path: Path,
         prompt: str,
-        output_dir: Optional[Path] = None,
+        output_path: Optional[Path] = None,
         size: str = "704*1280",  # TI2V uses different resolution
         **kwargs
     ) -> Path:
@@ -226,8 +215,10 @@ class Wan22TI2VService(Wan22VideoService):
             "--t5_cpu",
         ]
         
-        if output_dir:
-            cmd.extend(["--save_dir", str(output_dir)])
+        if output_path:
+            output_path = Path(output_path)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            cmd.extend(["--save_file", str(output_path)])
         
         print(f"🎬 Generating video with Wan 2.2 TI2V-5B...")
         
@@ -242,7 +233,10 @@ class Wan22TI2VService(Wan22VideoService):
         if result.returncode != 0:
             raise RuntimeError(f"Video generation failed: {result.stderr[-500:]}")
         
-        save_dir = output_dir or (self.repo_path / "output")
+        if output_path and output_path.exists():
+            return output_path
+        
+        save_dir = self.repo_path / "output"
         video_files = list(save_dir.glob("*.mp4"))
         
         if not video_files:

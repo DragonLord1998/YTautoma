@@ -97,7 +97,7 @@ class Wan22VideoService:
         cmd = [
             sys.executable,
             str(self.repo_path / "generate.py"),
-            "--task", "i2v-A14B",
+            "--task", "ti2v-5B",  # Matches Wan2.2-TI2V-5B model
             "--size", size,
             "--ckpt_dir", str(self.model_path),
             "--image", str(image_path),

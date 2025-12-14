@@ -73,12 +73,12 @@ class VideoAssembler:
             scene_temp = temp_dir / f"scene_{scene.scene_id:03d}"
             scene_temp.mkdir(exist_ok=True)
             
-            # Step 1: Generate audio narration with VibeVoice
-            print("   🔊 Generating narration with VibeVoice...")
-            audio_path = scene_temp / "narration.wav"
+            # Step 1: Generate audio narration
+            print("   🔊 Generating narration...")
+            audio_path = scene_temp / "narration"  # Extension added by TTS
             
             try:
-                self.tts.synthesize(scene.narration, audio_path)
+                audio_path = self.tts.synthesize(scene.narration, audio_path)
             except Exception as e:
                 print(f"   ⚠️ TTS failed: {e}")
                 continue

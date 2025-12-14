@@ -15,18 +15,18 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from shared.config import OUTPUT_DIR, ASSETS_DIR
 from shared.models import Story, AudioAsset, FinalVideo
-from app3_video_assembler.services import TTSFactory, VibeVoiceTTSService, FFmpegService
+from app3_video_assembler.services import TTSFactory, EdgeTTSService, FFmpegService
 
 
 class VideoAssembler:
     """Assemble final video from scenes, audio, and visuals"""
     
-    def __init__(self, tts_engine: str = "vibevoice"):
+    def __init__(self, tts_engine: str = "edge"):
         """
         Initialize video assembler.
         
         Args:
-            tts_engine: 'vibevoice' or 'piper'
+            tts_engine: 'edge' (simple) or 'vibevoice' (advanced)
         """
         self.tts = TTSFactory.create(preferred=tts_engine)
         self.ffmpeg = FFmpegService()

@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from shared.config import OUTPUT_DIR, ASSETS_DIR
 from shared.models import Story, AudioAsset, FinalVideo
-from services import TTSFactory, VibeVoiceTTSService, FFmpegService
+from app3_video_assembler.services import TTSFactory, VibeVoiceTTSService, FFmpegService
 
 
 class VideoAssembler:

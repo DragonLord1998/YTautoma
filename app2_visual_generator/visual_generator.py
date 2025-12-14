@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from shared.config import OUTPUT_DIR, LOW_VRAM_MODE
 from shared.models import Story, VisualAsset
-from services import ZImageService, QwenImageEditService, SimpleConsistencyService, Wan22VideoService
+from app2_visual_generator.services import ZImageService, QwenImageEditService, SimpleConsistencyService, Wan22VideoService
 
 
 class VisualGenerator:

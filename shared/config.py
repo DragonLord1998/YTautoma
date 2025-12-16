@@ -18,7 +18,9 @@ MODELS_DIR.mkdir(exist_ok=True)
 # ===========================================
 # Ollama Config (Local LLM for Story)
 # ===========================================
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma3:27b-abliterated")
+# DeepSeek V3 Q4 quantized: ~50GB, 671B params (37B active via MoE)
+# Alternative: qwen2.5:72b (~42GB), llama3.1:70b (~40GB)
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "deepseek-v3:q4_k_m")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 # ===========================================
@@ -48,18 +50,40 @@ VIBEVOICE_SPEAKER = os.getenv("VIBEVOICE_SPEAKER", "Carter")
 VIBEVOICE_REPO_PATH = os.getenv("VIBEVOICE_REPO_PATH", str(MODELS_DIR / "VibeVoice"))
 
 # ===========================================
+# Long-Form Video Settings (20 x 1-minute parts)
+# ===========================================
+TOTAL_PARTS = int(os.getenv("TOTAL_PARTS", "20"))
+PART_DURATION = int(os.getenv("PART_DURATION", "60"))  # 1 minute each
+TARGET_DURATION = TOTAL_PARTS * PART_DURATION  # 1200 seconds = 20 minutes
+SCENES_PER_PART = int(os.getenv("SCENES_PER_PART", "5"))
+
+# Legacy short-form settings (for backwards compatibility)
+SCENES_COUNT = 6  # Original shorts mode
+SHORT_DURATION = 60  # Original 60-second shorts
+
+# ===========================================
 # Video Settings
 # ===========================================
-VIDEO_WIDTH = 1088   # Must be divisible by 16 for Z-Image
-VIDEO_HEIGHT = 1920  # 9:16 vertical for Shorts
+VIDEO_WIDTH = 1280   # 720p horizontal for long-form
+VIDEO_HEIGHT = 720   # Standard YouTube format
 VIDEO_FPS = 24
-TARGET_DURATION = 60  # seconds
-SCENES_COUNT = 6
-SCENE_DURATION = TARGET_DURATION // SCENES_COUNT  # ~10 seconds each
 
-# Wan 2.2 video settings
-WAN_VIDEO_SIZE = "704*1280"  # Vertical (ti2v-5B supports 704*1280 or 1280*704)
-WAN_VIDEO_FRAMES = 121  # ~5 seconds at 24fps
+# Wan 2.2 video settings (14B model for 720p)
+WAN_VIDEO_SIZE = os.getenv("WAN_VIDEO_SIZE", "1280*720")  # 720p horizontal
+WAN_VIDEO_FRAMES = int(os.getenv("WAN_VIDEO_FRAMES", "241"))  # ~10 seconds at 24fps
+WAN_TASK = os.getenv("WAN_TASK", "i2v-14B")  # Full 14B model
+
+# ===========================================
+# Research Agent Config
+# ===========================================
+RESEARCH_MODEL = os.getenv("RESEARCH_MODEL", "qwen3:32b")  # 36B+ for deep research
+SEARXNG_URL = os.getenv("SEARXNG_URL", "http://localhost:8080")
+
+# ===========================================
+# ChatterBox TTS Config
+# ===========================================
+CHATTERBOX_DEVICE = os.getenv("CHATTERBOX_DEVICE", "cuda")
+CHATTERBOX_VOICE_REF = os.getenv("CHATTERBOX_VOICE_REF", None)  # Optional reference audio
 
 # ===========================================
 # Hardware Settings

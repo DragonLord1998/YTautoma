@@ -200,15 +200,27 @@ class TTSFactory:
     """Factory for creating TTS service"""
     
     @staticmethod
-    def create(preferred: str = "vibevoice"):
+    def create(preferred: str = "chatterbox"):
         """
         Create TTS service.
         
         Args:
-            preferred: 'vibevoice' (high quality) or 'edge' (simple)
+            preferred: 'chatterbox' (best quality), 'vibevoice', or 'edge' (simple)
         """
         # Check env variable
         preferred = os.getenv("TTS_ENGINE", preferred).lower()
+        
+        # Try ChatterBox first (best quality)
+        if preferred == "chatterbox":
+            try:
+                from app3_video_assembler.services.chatterbox_service import ChatterboxTTSService
+                service = ChatterboxTTSService()
+                if service.available:
+                    print("✅ Using ChatterBox TTS")
+                    return service
+            except ImportError:
+                pass
+            print("⚠️ ChatterBox not available, trying fallbacks...")
         
         if preferred == "vibevoice":
             service = VibeVoiceTTSService()
@@ -221,8 +233,16 @@ class TTSFactory:
             if service.available:
                 return service
         
-        # Try VibeVoice first, then Edge
-        for ServiceClass in [VibeVoiceTTSService, EdgeTTSService]:
+        # Try all in order: ChatterBox -> VibeVoice -> Edge
+        tts_classes = []
+        try:
+            from app3_video_assembler.services.chatterbox_service import ChatterboxTTSService
+            tts_classes.append(ChatterboxTTSService)
+        except ImportError:
+            pass
+        tts_classes.extend([VibeVoiceTTSService, EdgeTTSService])
+        
+        for ServiceClass in tts_classes:
             try:
                 service = ServiceClass()
                 if service.available:
@@ -231,5 +251,7 @@ class TTSFactory:
                 continue
         
         raise RuntimeError(
-            "No TTS available. Install edge-tts: pip install edge-tts"
+            "No TTS available. Install ChatterBox: pip install chatterbox-tts\n"
+            "Or Edge-TTS: pip install edge-tts"
         )
+

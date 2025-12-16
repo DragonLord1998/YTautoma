@@ -221,12 +221,48 @@ class FFmpegService:
         self,
         video_path: Path,
         audio_path: Path,
-        output_path: Path
+        output_path: Path,
+        match_audio_duration: bool = True
     ) -> Path:
-        """Add audio track to video (replacing any existing audio)"""
+        """
+        Add audio track to video, matching video length to audio.
+        
+        This FIXES the abrupt cuts issue by:
+        1. Getting audio duration first
+        2. Extending or trimming video to match audio exactly
+        3. Adding smooth fade-out at the end
+        
+        Args:
+            video_path: Input video file
+            audio_path: Input audio file  
+            output_path: Output combined video
+            match_audio_duration: If True, adjust video to match audio length
+        """
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
+        # Get durations
+        audio_duration = self.get_duration(audio_path)
+        video_duration = self.get_duration(video_path)
+        
+        print(f"   📊 Audio: {audio_duration:.2f}s, Video: {video_duration:.2f}s")
+        
+        if match_audio_duration and abs(video_duration - audio_duration) > 0.5:
+            # Need to adjust video length to match audio
+            if video_duration < audio_duration:
+                # Video is shorter than audio - loop/extend the video
+                print(f"   ⏩ Extending video from {video_duration:.1f}s to {audio_duration:.1f}s")
+                return self._extend_video_with_audio(
+                    video_path, audio_path, output_path, audio_duration
+                )
+            else:
+                # Video is longer than audio - trim with fade out
+                print(f"   ✂️ Trimming video from {video_duration:.1f}s to {audio_duration:.1f}s")
+                return self._trim_video_with_audio(
+                    video_path, audio_path, output_path, audio_duration
+                )
+        
+        # Durations match closely, just combine
         args = [
             "-i", str(video_path),
             "-i", str(audio_path),
@@ -234,14 +270,71 @@ class FFmpegService:
             "-c:a", "aac",
             "-map", "0:v:0",
             "-map", "1:a:0",
-            "-shortest",
+            "-t", str(audio_duration),  # Use audio duration, not -shortest
             str(output_path)
         ]
         
-        if self._run_ffmpeg(args, "Adding audio to video"):
+        if self._run_ffmpeg(args, "Combining video + audio"):
             return output_path
         else:
             raise RuntimeError("Failed to add audio")
+    
+    def _extend_video_with_audio(
+        self,
+        video_path: Path,
+        audio_path: Path,
+        output_path: Path,
+        target_duration: float
+    ) -> Path:
+        """Extend video to match audio by looping or frame-holding"""
+        # Use stream_loop to loop video until it matches audio
+        args = [
+            "-stream_loop", "-1",  # Loop video indefinitely
+            "-i", str(video_path),
+            "-i", str(audio_path),
+            "-t", str(target_duration),  # Cut at audio duration
+            "-c:v", "libx264",
+            "-preset", "fast",
+            "-c:a", "aac",
+            "-map", "0:v:0",
+            "-map", "1:a:0",
+            "-af", f"afade=t=out:st={target_duration - 0.5}:d=0.5",  # Fade audio at end
+            str(output_path)
+        ]
+        
+        if self._run_ffmpeg(args, "Extending video to match audio"):
+            return output_path
+        else:
+            raise RuntimeError("Failed to extend video")
+    
+    def _trim_video_with_audio(
+        self,
+        video_path: Path,
+        audio_path: Path,
+        output_path: Path,
+        target_duration: float
+    ) -> Path:
+        """Trim video to match audio duration with fade out"""
+        fade_start = max(0, target_duration - 0.5)
+        
+        args = [
+            "-i", str(video_path),
+            "-i", str(audio_path),
+            "-t", str(target_duration),
+            "-c:v", "libx264",
+            "-preset", "fast",
+            "-c:a", "aac",
+            "-map", "0:v:0",
+            "-map", "1:a:0",
+            "-vf", f"fade=t=out:st={fade_start}:d=0.5",  # Video fade out
+            "-af", f"afade=t=out:st={fade_start}:d=0.5",  # Audio fade out
+            str(output_path)
+        ]
+        
+        if self._run_ffmpeg(args, "Trimming video to match audio"):
+            return output_path
+        else:
+            raise RuntimeError("Failed to trim video")
     
     def get_duration(self, file_path: Path) -> float:
         """Get duration of video/audio file"""

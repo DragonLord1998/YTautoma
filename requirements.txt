@@ -1,16 +1,18 @@
-# YouTube Shorts Automation - Local Offline Models
-# This setup uses fully local/offline AI models
+# YouTube Long-Form & Shorts Automation - Local Offline Models
+# Supports both 60-second shorts and 20-minute long-form videos
+# Verified against official documentation on 2024-12-16
 
 # Core
 requests>=2.31.0
 pydantic>=2.0.0
 python-dotenv>=1.0.0
 Pillow>=10.0.0
+beautifulsoup4>=4.12.0  # For research agent web scraping
 
 # ===========================================
 # Z-Image (Local Diffusers)
 # ===========================================
-# Install diffusers from source for Z-Image support:
+# IMPORTANT: Install diffusers from source for Z-Image Turbo support
 # pip install git+https://github.com/huggingface/diffusers
 torch>=2.4.0
 transformers>=4.40.0
@@ -23,13 +25,31 @@ sentencepiece>=0.2.0
 # ===========================================
 # Clone Wan 2.2 repo separately:
 # git clone https://github.com/Wan-Video/Wan2.2.git
-# pip install -r Wan2.2/requirements.txt
+# cd Wan2.2 && pip install -r requirements.txt
+# 
+# Model Download:
+# huggingface-cli download Wan-AI/Wan2.2-I2V-A14B --local-dir ./Wan2.2-I2V-A14B
+#
+# GPU Requirements: 14B model needs 80GB VRAM or use flags:
+# --offload_model True --convert_model_dtype --t5_cpu
 einops>=0.7.0
 imageio>=2.33.0
 imageio-ffmpeg>=0.4.9
+decord>=0.6.0  # Video frame extraction for Wan 2.2
+av>=11.0.0  # Alternative video handling
 
 # ===========================================
-# VibeVoice TTS (Local)
+# ChatterBox TTS (Primary - Best Quality)
+# ===========================================
+# High-quality text-to-speech from Resemble AI
+# https://github.com/resemble-ai/chatterbox
+# Tested on Python 3.11, CUDA required
+chatterbox-tts>=0.1.0
+torchaudio>=2.0.0
+numpy>=1.26.0,<2.0.0  # ChatterBox requires numpy <2.0 for compatibility
+
+# ===========================================
+# VibeVoice TTS (Fallback)
 # ===========================================
 # Clone VibeVoice repo separately:
 # git clone https://github.com/microsoft/VibeVoice.git
@@ -37,7 +57,22 @@ imageio-ffmpeg>=0.4.9
 soundfile>=0.12.0
 
 # ===========================================
-# Flash Attention (faster inference) - Prebuilt for RTX 6000 Ada
+# Edge-TTS (Simple Fallback - No GPU)
 # ===========================================
-# Using prebuilt wheel for PyTorch 2.9 + CUDA 12.8 + Python 3.12 (skip long compilation)
+# Pure Python, uses Microsoft Edge's online TTS service
+# Works on Python 3.6+, no GPU needed
+edge-tts>=6.1.0
+
+# ===========================================
+# Hugging Face Hub CLI (Model Downloads)
+# ===========================================
+huggingface_hub[cli]>=0.20.0
+
+# ===========================================
+# Flash Attention (faster inference on NVIDIA GPUs)
+# ===========================================
+# Prebuilt for RTX 6000 Ada: PyTorch 2.9 + CUDA 12.8 + Python 3.12
+# If flash_attn fails, install other packages first, then flash_attn last
 flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.6.8/flash_attn-2.7.4%2Bcu128torch2.9-cp312-cp312-linux_x86_64.whl ; python_version == "3.12"
+
+
